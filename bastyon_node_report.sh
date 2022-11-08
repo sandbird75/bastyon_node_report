@@ -69,7 +69,7 @@ if pidof pocketcoind; then
 	# staking balance
 	STAKING_BALANCE=$(pocketcoin-cli getstakinginfo | jq '.balance')
 
-	# stuck transactions: has been created more then 600 seconds ago and still without confirmations
+	# stuck transactions: has been created more then 1800 seconds ago and still without confirmations
 	i=0
 	STUCK_TRANSACTION="false"
 	while true; do
@@ -79,7 +79,7 @@ if pidof pocketcoind; then
 		elif [[ "$CONFIRMATIONS" -eq 0 ]]; then
 			TIME=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].time')
 			ABANDONED=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].abandoned')
-			if [[ $(( $(date +%s) - $TIME )) -gt 600 && "$ABANDONED" == "false" ]]; then
+			if [[ $(( $(date +%s) - $TIME )) -gt 1800 && "$ABANDONED" == "false" ]]; then
 				STUCK_TRANSACTION="true"
 				# comment out next 3 strings if you want stuck transactions not to be removed automatically
 				TXID=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].txid')
