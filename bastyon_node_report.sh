@@ -63,7 +63,7 @@ if pidof pocketcoind; then
 	BLOCKS=$(pocketcoin-cli getblockchaininfo | jq '.blocks')
 	HEADERS=$(pocketcoin-cli getblockchaininfo | jq '.headers')
 
-	# wallet balance (summ all addresses by awk)
+	# full wallet balance (summ all addresses by awk)
 	WALLET_BALANCE=$(pocketcoin-cli listaddresses | jq '.[].balance' | awk '{n += $1}; END{printf "%.0f", n}')
 
 	# staking balance
@@ -99,8 +99,11 @@ if pidof pocketcoind; then
 	# external IP
 	EXTERNAL_IP=$(curl eth0.me)
 
-	# last boot time
+	# last os boot time
 	LAST_BOOT=`who -b | awk 'match($0, /[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]/){print substr($0,RSTART,RLENGTH)}'`
+
+	# last app start time
+	LAST_START=$(tac ~/.pocketcoin/debug.log | grep -m 1 "Pocketnet Core version" | awk -F" " '{print $1}' | date +"%Y-%m-%d %H:%M" -f -)
 
 	# save current vars for the next run to compare
 	echo "export ENABLED_0=\"$ENABLED\"" > $TEMP_FILE
@@ -114,6 +117,7 @@ if pidof pocketcoind; then
 	echo "export NODE_VERSION_LATEST_0=\"$NODE_VERSION_LATEST\"" >> $TEMP_FILE
 	echo "export EXTERNAL_IP_0=\"$EXTERNAL_IP\"" >> $TEMP_FILE
 	echo "export LAST_BOOT_0=\"$LAST_BOOT\"" >> $TEMP_FILE
+	echo "export LAST_START_0=\"$LAST_START\"" >> $TEMP_FILE
 
 	#checks for changes and problems
 
@@ -212,9 +216,15 @@ if pidof pocketcoind; then
 		EXTERNAL_IP_COMMENT="CHANGED"
 	fi
 
-	# last boot changed
+	# last os boot changed
 	if [[ "$LAST_BOOT" != "$LAST_BOOT_0"  ]]; then
-		LAST_BOOT_COMMENT="REBOOTED"
+		LAST_BOOT_COMMENT="OS REBOOTED"
+		SEND_TO_TELEGRAM="true"
+	fi
+
+	# last app start changed
+	if [[ "$LAST_START" != "$LAST_START_0"  ]]; then
+		LAST_START_COMMENT="APP RESTARTED"
 		SEND_TO_TELEGRAM="true"
 	fi
 
@@ -235,7 +245,8 @@ if pidof pocketcoind; then
 	Stuck transaction: $STUCK_TRANSACTION   <b>$STUCK_TRANSACTION_COMMENT</b>%0A\
 	Current version: $NODE_VERSION   <b>$NODE_VERSION_COMMENT</b>%0A\
 	External IP: $EXTERNAL_IP   <b>$EXTERNAL_IP_COMMENT</b>%0A\
-	Last boot: $LAST_BOOT   <b>$LAST_BOOT_COMMENT</b>"
+	Last boot: $LAST_BOOT   <b>$LAST_BOOT_COMMENT</b>%0A\
+	Last start: $LAST_START   <b>$LAST_START_COMMENT</b>"
 
 else # if node is not running
 	echo "export NODE_IS_NOT_RUNNING_0=\"true\"" >> $TEMP_FILE
