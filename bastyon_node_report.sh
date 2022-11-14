@@ -162,19 +162,19 @@ if pidof pocketcoind; then
 	fi
 
 	# node is lagging
-	if [[ $(( "$HEADERS" - "$BLOCKS" )) -gt 1 ]]; then
+	if [[ $(( $HEADERS - $BLOCKS )) -gt 1 ]]; then
 		BLOCKS_COMMENT="LAGGING"
-		if [[ $(( "$HEADERS_0" - "$BLOCKS_0" )) -le 1 ]]; then  # alerts only once
+		if [[ $(( $HEADERS_0 - $BLOCKS_0 )) -le 1 ]]; then  # alerts only once
 			SEND_TO_TELEGRAM="true"
 		fi
-	elif [[ $(( "$HEADERS_0" - "$BLOCKS_0" )) -gt 1 ]]; then    # alerts restoring
+	elif [[ $(( $HEADERS_0 - $BLOCKS_0 )) -gt 1 ]]; then    # alerts restoring
 		SEND_TO_TELEGRAM="true"
 	fi
 
 	# wallet balance is changed
 	if [[ "$WALLET_BALANCE" != "$WALLET_BALANCE_0" ]]; then
 		SEND_TO_TELEGRAM="true"
-		WALLET_BALANCE_COMMENT="$( echo $(( "$WALLET_BALANCE" - "$WALLET_BALANCE_0" )) | xargs printf "%+09d" | sed 's/........$/.&/' | sed 's/+/%2B/')"
+		WALLET_BALANCE_COMMENT="$( echo $(( $WALLET_BALANCE - $WALLET_BALANCE_0 )) | xargs printf "%+09d" | sed 's/........$/.&/' | sed 's/+/%2B/')"
 	fi
 
 	# staking balance does not match wallet balance (it's normal only for 2 hours after wallet balance change)
