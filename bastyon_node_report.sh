@@ -53,21 +53,22 @@ fi
 if pidof pocketcoind; then
 
 	# staking
-	ENABLED=$(pocketcoin-cli getstakinginfo | jq '.enabled')
-	STAKING=$(pocketcoin-cli getstakinginfo | jq '.staking')
+	#ENABLED=$(pocketcoin-cli getstakinginfo | jq '.enabled')
+	#STAKING=$(pocketcoin-cli getstakinginfo | jq '.staking')
+	# staking balance
+	#STAKING_BALANCE=$(pocketcoin-cli getstakinginfo | jq '.balance')
+	read ENABLED STAKING STAKING_BALANCE < <(echo $(pocketcoin-cli getstakinginfo | jq -r '.enabled, .staking, .balance'))
 
 	# connections - if less then 8 then there is a problem
 	CONNECTION_COUNT=$(pocketcoin-cli getconnectioncount)
 
 	# blockchain
-	BLOCKS=$(pocketcoin-cli getblockchaininfo | jq '.blocks')
-	HEADERS=$(pocketcoin-cli getblockchaininfo | jq '.headers')
+	#BLOCKS=$(pocketcoin-cli getblockchaininfo | jq '.blocks')
+	#HEADERS=$(pocketcoin-cli getblockchaininfo | jq '.headers')
+	read BLOCKS HEADERS < <(echo $(pocketcoin-cli getblockchaininfo | jq -r '.blocks, .headers'))
 
 	# full wallet balance (summ all addresses by awk)
 	WALLET_BALANCE=$(pocketcoin-cli listaddresses | jq '.[].balance' | awk '{n += $1}; END{printf "%.0f", n}')
-
-	# staking balance
-	STAKING_BALANCE=$(pocketcoin-cli getstakinginfo | jq '.balance')
 
 	# stuck transactions: has been created more then 1800 seconds ago and still without confirmations
 	i=0
@@ -259,9 +260,9 @@ fi
 
 # write to log
 cat "$TEMP_FILE" >> "$LOG_FILE"
-echo $TEXT_MESSAGE >> "$LOG_FILE"
 
 # send to Telegram
 if [[ $# -eq 0 || "$SEND_TO_TELEGRAM" == "true" ]]; then
 	curl -s -X POST "$URL" -d chat_id="$CHAT_ID" -d parse_mode=HTML -d text="$TEXT_MESSAGE"
+	echo $TEXT_MESSAGE >> "$LOG_FILE"
 fi
