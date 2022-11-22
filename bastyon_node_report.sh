@@ -52,19 +52,13 @@ fi
 # check the node is running, then goes on all next checking
 if pidof pocketcoind; then
 
-	# staking
-	#ENABLED=$(pocketcoin-cli getstakinginfo | jq '.enabled')
-	#STAKING=$(pocketcoin-cli getstakinginfo | jq '.staking')
 	# staking balance
-	#STAKING_BALANCE=$(pocketcoin-cli getstakinginfo | jq '.balance')
 	read ENABLED STAKING STAKING_BALANCE < <(echo $(pocketcoin-cli getstakinginfo | jq -r '.enabled, .staking, .balance'))
 
 	# connections - if less then 8 then there is a problem
 	CONNECTION_COUNT=$(pocketcoin-cli getconnectioncount)
 
 	# blockchain
-	#BLOCKS=$(pocketcoin-cli getblockchaininfo | jq '.blocks')
-	#HEADERS=$(pocketcoin-cli getblockchaininfo | jq '.headers')
 	read BLOCKS HEADERS < <(echo $(pocketcoin-cli getblockchaininfo | jq -r '.blocks, .headers'))
 
 	# full wallet balance (summ all addresses by awk)
