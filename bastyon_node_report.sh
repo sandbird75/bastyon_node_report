@@ -50,7 +50,7 @@ else  # or initialize some of them on first run to avoid errors
 fi
 
 # check the node is running, then goes on all next checking
-if pidof pocketcoind; then
+if pidof pocketcoind >/dev/null; then
 
 	# staking balance
 	read ENABLED STAKING STAKING_BALANCE < <(echo $(pocketcoin-cli getstakinginfo | jq -r '.enabled, .staking, .balance'))
@@ -68,16 +68,17 @@ if pidof pocketcoind; then
 	i=0
 	STUCK_TRANSACTION="false"
 	while true; do
-		CONFIRMATIONS=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].confirmations')
+		# CONFIRMATIONS=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].confirmations')
+		read CONFIRMATIONS TIME ABANDONED TXID < <(echo $(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].confirmations, .[$i].time, .[$i].abandoned, .[$i].txid'))
 		if [[ "$CONFIRMATIONS" == "null" ]]; then
 			break
 		elif [[ "$CONFIRMATIONS" -eq 0 ]]; then
-			TIME=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].time')
-			ABANDONED=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].abandoned')
+			# TIME=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].time')
+			# ABANDONED=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].abandoned')
 			if [[ $(( $(date +%s) - $TIME )) -gt 1800 && "$ABANDONED" == "false" ]]; then
 				STUCK_TRANSACTION="true"
 				# comment out next 3 strings if you want stuck transactions not to be removed automatically
-				TXID=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].txid')
+				# TXID=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].txid')
 				pocketcoin-cli abandontransaction "$TXID" >> "$LOG_FILE"
 				echo "TX \"$TXID\" has been abandoned"  >> "$LOG_FILE"
 			fi
@@ -95,10 +96,12 @@ if pidof pocketcoind; then
 	EXTERNAL_IP=$(curl eth0.me)
 
 	# last os boot time
-	LAST_BOOT=`who -b | awk 'match($0, /[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]/){print substr($0,RSTART,RLENGTH)}'`
+	# LAST_BOOT=`who -b | awk 'match($0, /[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]/){print substr($0,RSTART,RLENGTH)}'`
+	LAST_BOOT=$(ps -p 1 -o lstart= | date +"%Y-%m-%d %H:%M" -f -)
 
 	# last app start time
-	LAST_START=$(tac ~/.pocketcoin/debug.log | grep -m 1 "Pocketnet Core version" | awk -F" " '{print $1}' | date +"%Y-%m-%d %H:%M" -f -)
+	# LAST_START=$(tac ~/.pocketcoin/debug.log | grep -m 1 "Pocketnet Core version" | awk -F" " '{print $1}' | date +"%Y-%m-%d %H:%M" -f -)
+	LAST_START=$(ps -p `pidof pocketcoind` -o lstart= | date +"%Y-%m-%d %H:%M" -f -)
 
 	# save current vars for the next run to compare
 	echo "export ENABLED_0=\"$ENABLED\"" > $TEMP_FILE
