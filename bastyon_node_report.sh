@@ -68,17 +68,13 @@ if pidof pocketcoind >/dev/null; then
 	i=0
 	STUCK_TRANSACTION="false"
 	while true; do
-		# CONFIRMATIONS=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].confirmations')
-		read CONFIRMATIONS TIME ABANDONED TXID < <(echo $(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].confirmations, .[$i].time, .[$i].abandoned, .[$i].txid'))
+		read CONFIRMATIONS TIME ABANDONED TXID < <(echo $(pocketcoin-cli listtransactions | jq -r --argjson i $i '.txs[$i] | .confirmations, .time, .abandoned, .txid'))
 		if [[ "$CONFIRMATIONS" == "null" ]]; then
 			break
 		elif [[ "$CONFIRMATIONS" -eq 0 ]]; then
-			# TIME=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].time')
-			# ABANDONED=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].abandoned')
 			if [[ $(( $(date +%s) - $TIME )) -gt 1800 && "$ABANDONED" == "false" ]]; then
 				STUCK_TRANSACTION="true"
-				# comment out next 3 strings if you want stuck transactions not to be removed automatically
-				# TXID=$(pocketcoin-cli listtransactions | jq -r --argjson i $i '.[$i].txid')
+				# comment out next 2 strings if you want stuck transactions not to be removed automatically
 				pocketcoin-cli abandontransaction "$TXID" >> "$LOG_FILE"
 				echo "TX \"$TXID\" has been abandoned"  >> "$LOG_FILE"
 			fi
@@ -96,11 +92,9 @@ if pidof pocketcoind >/dev/null; then
 	EXTERNAL_IP=$(curl eth0.me)
 
 	# last os boot time
-	# LAST_BOOT=`who -b | awk 'match($0, /[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]/){print substr($0,RSTART,RLENGTH)}'`
 	LAST_BOOT=$(ps -p 1 -o lstart= | date +"%Y-%m-%d %H:%M" -f -)
 
 	# last app start time
-	# LAST_START=$(tac ~/.pocketcoin/debug.log | grep -m 1 "Pocketnet Core version" | awk -F" " '{print $1}' | date +"%Y-%m-%d %H:%M" -f -)
 	LAST_START=$(ps -p `pidof pocketcoind` -o lstart= | date +"%Y-%m-%d %H:%M" -f -)
 
 	# save current vars for the next run to compare
@@ -136,12 +130,12 @@ if pidof pocketcoind >/dev/null; then
 	fi
 
 	# too few connections
-	if [[ "$CONNECTION_COUNT" -lt 8 ]]; then
+	if [[ "$CONNECTION_COUNT" -lt 10 ]]; then
 		CONNECTION_COUNT_COMMENT="TOO FEW"
-		if [[ "$CONNECTION_COUNT_0" -ge 8 ]]; then  # alerts only once
+		if [[ "$CONNECTION_COUNT_0" -ge 10 ]]; then  # alerts only once
 			SEND_TO_TELEGRAM="true"
 		fi
-	elif [[ "$CONNECTION_COUNT_0" -lt 8 ]]; then    # alerts restoring
+	elif [[ "$CONNECTION_COUNT_0" -lt 10 ]]; then    # alerts restoring
 		SEND_TO_TELEGRAM="true"
 	fi
 
@@ -200,7 +194,7 @@ if pidof pocketcoind >/dev/null; then
 		STUCK_TRANSACTION_COMMENT="REMOVED"
 	fi
 
-	# new pocketner.core release published on Github
+	# new Pocketnet Core release published on Github
 	if [[ "$NODE_VERSION_LATEST" != "$NODE_VERSION" && "$NODE_VERSION_LATEST" != "" ]]; then
 		NODE_VERSION_COMMENT="NEW $NODE_VERSION_LATEST"
 		if [[ "$NODE_VERSION_LATEST" != "$NODE_VERSION_LATEST_0" ]]; then # alerts only once
