@@ -64,15 +64,15 @@ if pidof pocketcoind >/dev/null; then
 	# full wallet balance (summ all addresses by awk)
 	WALLET_BALANCE=$(pocketcoin-cli listaddresses | jq '.[].balance' | awk '{n += $1}; END{printf "%.0f", n}')
 
-	# stuck transactions: has been created more then 1800 seconds ago and still without confirmations
+	# stuck transactions: has been created more then 30 blocks ago and still without confirmations
 	i=0
 	STUCK_TRANSACTION="false"
 	while true; do
-		read CONFIRMATIONS TIME ABANDONED TXID < <(echo $(pocketcoin-cli listtransactions | jq -r --argjson i $i '.txs[$i] | .confirmations, .time, .abandoned, .txid'))
+		read CONFIRMATIONS BLOCKHEIGHT ABANDONED TXID < <(echo $(pocketcoin-cli listtransactions "*" 30 | jq -r --argjson i $i '.txs[$i] | .confirmations, .blockheight, .abandoned, .txid'))
 		if [[ "$CONFIRMATIONS" == "null" ]]; then
 			break
 		elif [[ "$CONFIRMATIONS" -eq 0 ]]; then
-			if [[ $(( $(date +%s) - $TIME )) -gt 1800 && "$ABANDONED" == "false" ]]; then
+			if [[ $(( $BLOCKS - $BLOCKHEIGHT )) -gt 30 && "$ABANDONED" == "false" ]]; then
 				STUCK_TRANSACTION="true"
 				# comment out next 2 strings if you want stuck transactions not to be removed automatically
 				pocketcoin-cli abandontransaction "$TXID" >> "$LOG_FILE"
