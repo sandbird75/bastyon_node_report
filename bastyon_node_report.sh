@@ -92,10 +92,10 @@ if pidof pocketcoind >/dev/null; then
 	EXTERNAL_IP=$(curl eth0.me)
 
 	# last os boot time
-	LAST_BOOT=$(ps -p 1 -o lstart= | date +"%Y-%m-%d %H:%M" -f -)
+	LAST_BOOT=$(LC_ALL=C ps -p 1 -o lstart= | date +"%Y-%m-%d %H:%M" -f -)
 
 	# last app start time
-	LAST_START=$(ps -p `pidof pocketcoind` -o lstart= | date +"%Y-%m-%d %H:%M" -f -)
+	LAST_START=$(LC_ALL=C ps -p `pidof pocketcoind` -o lstart= | date +"%Y-%m-%d %H:%M" -f -)
 
 	# save current vars for the next run to compare
 	echo "export ENABLED_0=\"$ENABLED\"" > $TEMP_FILE
